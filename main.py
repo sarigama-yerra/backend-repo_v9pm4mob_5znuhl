@@ -1,8 +1,12 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
 
-app = FastAPI()
+from schemas import Contactmessage
+from database import create_document
+
+app = FastAPI(title="Nectar Engineering India API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +18,21 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "Nectar Engineering India Backend Running"}
 
 @app.get("/api/hello")
 def hello():
     return {"message": "Hello from the backend API!"}
+
+@app.post("/api/contact")
+def submit_contact(payload: Contactmessage):
+    try:
+        inserted_id = create_document("contactmessage", payload)
+        return {"status": "success", "id": inserted_id}
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.errors())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/test")
 def test_database():
